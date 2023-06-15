@@ -9,6 +9,8 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 const bcrypt = require('bcryptjs')
 require('dotenv').config()
+const debug = require('debug')('authentication_basics:*')
+//this how u set it for whole app
 
 const mongoDb = process.env.MONGODB_LOGIN;
 mongoose.connect(mongoDb, { useUnifiedTopology: true, useNewUrlParser: true });
@@ -36,10 +38,14 @@ passport.use(
         if (!user) {
           return done(null, false, { message: "Incorrect username" });
         };
-        if (user.password !== password) {
-          return done(null, false, { message: "Incorrect password" });
-        };
-        return done(null, user);
+        const passwordsMatch = await bcrypt.compare(password, user.password)
+        
+        if (passwordsMatch) {
+          return done(null, user);
+        } else {
+          return done(null, false, {message: 'Incorrect Password'})
+        }
+        
       } catch(err) {
         return done(err);
       };
@@ -63,6 +69,8 @@ passport.serializeUser(function(user, done) {
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.urlencoded({ extended: false }));
+
+// this makes it so that currentUser can be accessed in all views and app. App use without route will run everytime any req is made
 app.use(function(req, res, next) {
     res.locals.currentUser = req.user;
     next();
@@ -73,6 +81,7 @@ app.get("/", (req, res) => res.render("index", {
 }));
 app.get('/sign-up', (req, res, next) => {
     res.render('sign-up-form')
+    debug('in sign up')
 })
 app.post("/sign-up", async (req, res, next) => {
 
@@ -87,6 +96,8 @@ app.post("/sign-up", async (req, res, next) => {
       })
 
       await newUser.save()
+      debug('user successfully registered')
+      res.redirect('/')
     } catch(err) {
       return next(err);
     };
