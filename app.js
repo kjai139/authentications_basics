@@ -55,11 +55,14 @@ passport.use(
 passport.serializeUser(function(user, done) {
     done(null, user.id);
   });
-  
+  //serialize defines how the object should be serialized into a format that can be stored into the session such as a unique id
+
+  //deserialize is called only once during the authentication process which is right after the user is authenticated and reconstructing the user object. when it's done it will be in the req.user
   passport.deserializeUser(async function(id, done) {
     try {
       const user = await User.findById(id);
       done(null, user);
+      //in the done call back object first arg is error and second arg
     } catch(err) {
       done(err);
     };
@@ -67,8 +70,11 @@ passport.serializeUser(function(user, done) {
 
 
 app.use(passport.initialize());
+//this must be called before route handlers that use passport functionality
 app.use(passport.session());
+//this is a function that looks for express session middleware specifically that you have to set up
 app.use(express.urlencoded({ extended: false }));
+//this line is for viewtemplate backend to backend with key-value pairs encoded
 
 // this makes it so that currentUser can be accessed in all views and app. App use without route will run everytime any req is made
 app.use(function(req, res, next) {
